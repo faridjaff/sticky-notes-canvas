@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2e38"></stop>
+      <stop offset="1" stop-color="#1a1d24"></stop>
+    </linearGradient>
+    <linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE27A"></stop><stop offset="1" stop-color="#F5C84A"></stop></linearGradient>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB894"></stop><stop offset="1" stop-color="#F78E60"></stop></linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B6DCF5"></stop><stop offset="1" stop-color="#7BB8E8"></stop></linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.45"></feDropShadow>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"></rect>
+  <g filter="url(#sh)">
+    <rect x="108" y="124" width="300" height="300" rx="14" fill="url(#y)" transform="rotate(-10 256 270)"></rect>
+    <rect x="128" y="100" width="290" height="290" rx="14" fill="url(#p)" transform="rotate(8 268 240)"></rect>
+    <rect x="106" y="112" width="300" height="300" rx="14" fill="url(#b)" transform="rotate(-2 256 256)"></rect>
+  </g>
+  <g transform="translate(106 112) rotate(-2 150 150)" opacity="0.22">
+    <rect x="28" y="140" width="220" height="8" rx="4" fill="#000"></rect>
+    <rect x="28" y="170" width="170" height="8" rx="4" fill="#000"></rect>
+  </g>
+</svg>

@@ -1,0 +1,64 @@
+{
+  "name": "sticky-notes",
+  "version": "1.0.0",
+  "description": "Spatial sticky-notes canvas",
+  "main": "main.js",
+  "private": true,
+  "homepage": "https://local.sticky-notes",
+  "author": "faridjaff <faridjaff@users.noreply.github.com>",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.mjs",
+    "build:icons": "node build-icons.mjs",
+    "build": "electron-builder",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0",
+    "sharp": "^0.33.0"
+  },
+  "build": {
+    "appId": "com.local.sticky-notes",
+    "productName": "Sticky Notes",
+    "files": [
+      "main.js",
+      "preload.js",
+      "storage.js",
+      "Sticky Notes.html",
+      "app.jsx",
+      "vendor/**",
+      "build/icon.png",
+      "build/icons/**",
+      "package.json"
+    ],
+    "asarUnpack": ["build/icon.png", "build/icons/**"],
+    "linux": {
+      "target": ["deb", "AppImage"],
+      "category": "Utility",
+      "icon": "build/icons",
+      "synopsis": "Spatial sticky-notes canvas",
+      "description": "Sticky Notes is a spatial canvas for organizing sticky notes into folders.",
+      "desktop": {
+        "StartupWMClass": "sticky-notes"
+      }
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "identity": null
+    },
+    "deb": {
+      "afterInstall": "build/after-install.sh",
+      "afterRemove": "build/after-remove.sh"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
