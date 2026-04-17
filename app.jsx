@@ -334,8 +334,10 @@ function AppInner({ store, setKey }) {
   /* ----- derived ----- */
   const isAll = currentFolder==='root';
 
+  // Notes visible on the canvas. In a specific folder, also surface any pinned
+  // note from elsewhere — pinning means "follow me across folders".
   const folderNotes = useMemo(() =>
-    isAll ? notes : notes.filter(n => n.folder === currentFolder),
+    isAll ? notes : notes.filter(n => n.folder === currentFolder || n.pinned),
     [notes, currentFolder, isAll]);
 
   const filteredNotes = useMemo(() => {
