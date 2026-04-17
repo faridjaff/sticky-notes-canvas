@@ -390,6 +390,26 @@ function AppInner({ store, setKey }) {
     setNotes(ns => ns.map(n => n.id===noteId ? {...n, folder: folderId, x: 80+Math.random()*100, y: 80+Math.random()*80} : n));
   };
 
+  // Batch move for multi-selection drag. Preserves relative positions of
+  // the moved cluster so dropping N notes on a folder lands them in the
+  // same arrangement near the target folder's top-left.
+  const moveNotesToFolder = (noteIds, folderId) => {
+    if (!noteIds || !noteIds.length) return;
+    const idSet = new Set(noteIds);
+    setNotes(ns => {
+      const targets = ns.filter(n => idSet.has(n.id));
+      if (!targets.length) return ns;
+      const minX = Math.min(...targets.map(n => n.x));
+      const minY = Math.min(...targets.map(n => n.y));
+      const baseX = 80 + Math.random() * 100;
+      const baseY = 80 + Math.random() * 80;
+      return ns.map(n => idSet.has(n.id)
+        ? { ...n, folder: folderId, x: n.x - minX + baseX, y: n.y - minY + baseY }
+        : n);
+    });
+    setSelectedIds(new Set());
+  };
+
   /* ----- link operations ----- */
   const addLink = (fromId, toId) => {
     if (!fromId || !toId || fromId===toId) return;
@@ -476,6 +496,7 @@ function AppInner({ store, setKey }) {
         renamingFolder={renamingFolder} setRenamingFolder={setRenamingFolder}
         onDeleteFolder={(id)=>setConfirmDel({kind:'folder', id})}
         onDropNoteOnFolder={moveNoteToFolder}
+        onDropNotesOnFolder={moveNotesToFolder}
         onCreateNote={createNote}
         open={store.drawer}
         setOpen={(v) => setKey('drawer', v)}
@@ -1248,7 +1269,12 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
       draggable={!dragging && !editingTitle && !editing}
       onDragStart={e=>{
         if (draggingRef.current) { e.preventDefault(); return; }
-        e.dataTransfer.setData('note-id', note.id);
+        // If this note is part of a multi-selection, carry every selected
+        // id so a drop on a folder moves the whole group at once.
+        const ids = (selected && selectedIds && selectedIds.size > 1)
+          ? [...selectedIds].join(',')
+          : note.id;
+        e.dataTransfer.setData('note-ids', ids);
         e.dataTransfer.effectAllowed='move';
       }}
       onMouseDown={onFocus}
@@ -1480,7 +1506,7 @@ function ConfirmDialog({T, title, body, onCancel, onConfirm}) {
 /* ==================================================================== */
 function FoldersDrawer({T, tweaks, folders, notes, currentFolder, setCurrentFolder,
   onCreateFolder, onRenameFolder, renamingFolder, setRenamingFolder, onDeleteFolder,
-  onDropNoteOnFolder, onCreateNote,
+  onDropNoteOnFolder, onDropNotesOnFolder, onCreateNote,
   open, setOpen,
   folderOrder, setFolderOrder}) {
 
@@ -1525,10 +1551,10 @@ function FoldersDrawer({T, tweaks, folders, notes, currentFolder, setCurrentFold
         }}
         onDragOver={e=>{
           if (isAll) return;
-          // Accept either a note drop (move note into folder) or a folder drop (reorder)
-          const hasNote = e.dataTransfer.types.includes('note-id');
+          // Accept either a note drop (move note(s) into folder) or a folder drop (reorder)
+          const hasNotes = e.dataTransfer.types.includes('note-ids');
           const hasFolder = e.dataTransfer.types.includes('folder-id');
-          if (!hasNote && !hasFolder) return;
+          if (!hasNotes && !hasFolder) return;
           e.preventDefault();
           if (hasFolder) setDragOverFolderId(f.id);
           else { e.currentTarget.style.outline=`1px dashed ${T.accent}`; e.currentTarget.style.background = withA(T.accent,.2); }
@@ -1544,8 +1570,12 @@ function FoldersDrawer({T, tweaks, folders, notes, currentFolder, setCurrentFold
           setDragOverFolderId(null);
           const folderId = e.dataTransfer.getData('folder-id');
           if (folderId && !isAll) { moveFolder(folderId, f.id); return; }
-          const nid = e.dataTransfer.getData('note-id');
-          if (nid && !isAll) onDropNoteOnFolder(nid, f.id);
+          const raw = e.dataTransfer.getData('note-ids');
+          if (raw && !isAll) {
+            const ids = raw.split(',').filter(Boolean);
+            if (ids.length > 1 && onDropNotesOnFolder) onDropNotesOnFolder(ids, f.id);
+            else if (ids.length === 1) onDropNoteOnFolder(ids[0], f.id);
+          }
         }}
         onClick={()=>setCurrentFolder(f.id)}
         onDoubleClick={()=>!isAll && setRenamingFolder(f.id)}
