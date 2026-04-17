@@ -390,6 +390,18 @@ function AppInner({ store, setKey, exportNow, importNow }) {
     return () => off && off();
   }, []);
 
+  // Suppress the host browser's Ctrl/Cmd+wheel page zoom across the whole
+  // app. We only preventDefault when a modifier is held so plain wheel
+  // events on text bodies / drawer scroll still work naturally; the canvas
+  // itself handles plain wheel = zoom in Desktop's onWheel.
+  useEffect(() => {
+    const guard = (e) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    };
+    window.addEventListener('wheel', guard, { passive: false });
+    return () => window.removeEventListener('wheel', guard);
+  }, []);
+
   const T = themeTokens(tweaks.theme);
 
   /* ----- derived ----- */
@@ -849,23 +861,19 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
 
   const onWheel = (e) => {
     if (e.target.matches('textarea, input, [contenteditable="true"]')) return;
-    if (e.ctrlKey || e.metaKey) {
-      // Ctrl/Cmd + wheel = zoom toward cursor
-      e.preventDefault();
-      const rect = deskRef.current.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      const factor = Math.exp(-e.deltaY * 0.01);
-      setView(v => {
-        const nz = Math.max(0.25, Math.min(3, v.z * factor));
-        const ratio = nz / v.z;
-        return { x: mx - (mx - v.x) * ratio, y: my - (my - v.y) * ratio, z: nz };
-      });
-    } else {
-      // plain wheel / trackpad = pan the canvas
-      e.preventDefault();
-      setView(v => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
-    }
+    // Plain wheel = zoom toward cursor (Figma-style default). No modifier
+    // required — and we don't honor Ctrl/Cmd specially because the host
+    // browser hijacks Ctrl+wheel for page zoom in the web build.
+    e.preventDefault();
+    const rect = deskRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const factor = Math.exp(-e.deltaY * 0.01);
+    setView(v => {
+      const nz = Math.max(0.25, Math.min(3, v.z * factor));
+      const ratio = nz / v.z;
+      return { x: mx - (mx - v.x) * ratio, y: my - (my - v.y) * ratio, z: nz };
+    });
   };
 
   const onMouseDown = (e) => {
