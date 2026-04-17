@@ -1208,6 +1208,15 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
     const sX = e.clientX, sY = e.clientY;
     const z = zRef.current;
 
+    // Returns a folder id (≠ 'root') if the pointer is currently over a folder
+    // row, else null. Lets header pointer-drag also act as drag-to-folder.
+    const folderIdUnder = (ev) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const row = el && el.closest && el.closest('[data-folder-id]');
+      const fid = row && row.getAttribute('data-folder-id');
+      return (fid && fid !== 'root') ? fid : null;
+    };
+
     // Group drag: if this note was already part of a multi-selection, move all selected notes together.
     const isGroupDrag = !(e.ctrlKey || e.metaKey) && selected && selectedIds && selectedIds.size > 1 && typeof setNotes === 'function';
     if (isGroupDrag) {
@@ -1221,12 +1230,16 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
           return s ? { ...n, x: s.x + dx, y: s.y + dy } : n;
         }));
       };
-      const up = () => {
+      const up = (ev) => {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
         window.removeEventListener('pointercancel', up);
         draggingRef.current = false;
         setDragging(false);
+        const targetFolder = folderIdUnder(ev);
+        if (targetFolder && onMoveNotesToFolder) {
+          onMoveNotesToFolder([...selectedIds], targetFolder);
+        }
       };
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
@@ -1237,11 +1250,16 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
     // Single drag.
     const { x:nx, y:ny } = note;
     const move = (ev) => onChange({ x: nx+(ev.clientX-sX)/z, y: ny+(ev.clientY-sY)/z });
-    const up = () => {
+    const up = (ev) => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+      draggingRef.current = false;
       setDragging(false);
+      const targetFolder = folderIdUnder(ev);
+      if (targetFolder && targetFolder !== note.folder && onMoveToFolder) {
+        onMoveToFolder(targetFolder);
+      }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
