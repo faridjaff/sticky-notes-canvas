@@ -1366,7 +1366,7 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
       <div onDoubleClick={()=>setEditing(true)}
         style={{
           flex:1, padding:'10px 14px', overflow:'auto',
-          fontFamily: tweaks.theme==='terminal' ? T.bodyFont : tweaks.theme==='paper' ? T.bodyFont : tweaks.font+', system-ui, sans-serif',
+          fontFamily: tweaks.theme==='terminal' ? T.bodyFont : tweaks.font+', system-ui, sans-serif',
           fontSize: tweaks.theme==='paper' ? 18 : 13.5,
           lineHeight: tweaks.theme==='paper' ? 1.35 : 1.5,
           color:ink,
@@ -1748,7 +1748,7 @@ function TweakPanel({T, tweaks, update, onClose}) {
       ]}/>
       <Label>Font</Label>
       <Segmented T={T} value={tweaks.font} onChange={v=>update({font:v})} options={[
-        {id:'Inter',label:'Inter'},{id:'Source Serif 4',label:'Serif'},{id:'IBM Plex Mono',label:'Mono'}
+        {id:'Inter',label:'Inter'},{id:'Source Serif 4',label:'Serif'},{id:'IBM Plex Mono',label:'Mono'},{id:'Caveat',label:'Handwritten'}
       ]}/>
       <Label>Density</Label>
       <Segmented T={T} value={tweaks.density} onChange={v=>update({density:v})} options={[
