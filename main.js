@@ -49,7 +49,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile('Sticky Notes.html');
+  mainWindow.loadFile('index.html');
 
   mainWindow.on('close', () => {
     if (mainWindow) saveBounds(mainWindow.getBounds());

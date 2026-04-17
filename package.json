@@ -27,7 +27,7 @@
       "main.js",
       "preload.js",
       "storage.js",
-      "Sticky Notes.html",
+      "index.html",
       "app.jsx",
       "vendor/**",
       "build/icon.png",
