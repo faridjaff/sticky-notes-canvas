@@ -1091,6 +1091,7 @@ function AppInner({ store, setKey, exportNow, importNow, takeSnapshot, undo, red
         folderName={currentFolderName}
         noteCount={folderNotes.length}
         folderCount={Object.keys(folders).length-1}
+        onOpenPrefs={()=>setPrefsOpen(o=>!o)}
       />
     </div>
   );
@@ -2828,7 +2829,7 @@ function Segmented({T, value, onChange, options}) {
 /* ==================================================================== */
 /* STATUS BAR                                                            */
 /* ==================================================================== */
-function StatusBar({T, tweaks, folderName, noteCount, folderCount}) {
+function StatusBar({T, tweaks, folderName, noteCount, folderCount, onOpenPrefs}) {
   return (
     <div style={{
       position:'absolute', left:0, right:0, bottom:0, height:28,
@@ -2843,6 +2844,17 @@ function StatusBar({T, tweaks, folderName, noteCount, folderCount}) {
       <span style={{opacity:.4}}>·</span>
       <span>{folderCount} subfolder{folderCount===1?'':'s'}</span>
       <div style={{flex:1}}/>
+      <button
+        onClick={onOpenPrefs}
+        title="Preferences (Ctrl+,)"
+        style={{
+          background:'transparent', border:'none', padding:0, margin:0,
+          font:'inherit', color:T.muted, cursor:'pointer',
+        }}
+        onMouseEnter={(e)=>{ e.currentTarget.style.textDecoration='underline'; e.currentTarget.style.color=T.panelText; }}
+        onMouseLeave={(e)=>{ e.currentTarget.style.textDecoration='none'; e.currentTarget.style.color=T.muted; }}
+      >preferences</button>
+      <span style={{opacity:.4}}>·</span>
       <a
         href="https://github.com/faridjaff/sticky-notes"
         target="_blank"
