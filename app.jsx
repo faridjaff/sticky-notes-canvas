@@ -1786,9 +1786,10 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
 
   const [dragging, setDragging] = useState(false);
   const draggingRef = useRef(false);
-  // Remembers pointer-down coords on the pin button so we can suppress the
-  // click if the user actually dragged the note by its pin (drag-vs-click).
-  const pinDownRef = useRef(null);
+  // Remembers pointer-down coords on any header button (pin, link, ×) so we
+  // can suppress its click if the user actually dragged the note by it. The
+  // whole header is a drag handle, so every button inside needs this guard.
+  const btnDownRef = useRef(null);
 
   const onHeaderDown = (e) => {
     if (editingTitle || e.button!==0) return;
@@ -1907,19 +1908,15 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
           fontFamily: tweaks.theme==='terminal' ? T.bodyFont : tweaks.font+', system-ui, sans-serif',
         }}>
         <button
-          onPointerDown={e=>{ pinDownRef.current = {x:e.clientX, y:e.clientY}; }}
+          onPointerDown={e=>{ btnDownRef.current = {x:e.clientX, y:e.clientY}; }}
           onClick={e=>{
             e.stopPropagation();
-            // The header's pointerdown also starts a note drag, so a grab-
-            // and-drag by the pin would otherwise toggle pinned on release.
-            // Only toggle if the pointer barely moved between down and up.
-            const d = pinDownRef.current;
+            const d = btnDownRef.current;
+            btnDownRef.current = null;
             if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) >= 6) {
               e.preventDefault();
-              pinDownRef.current = null;
               return;
             }
-            pinDownRef.current = null;
             onChange({pinned:!note.pinned});
           }}
           title={note.pinned ? 'Pinned (visible in every folder) · click to unpin' : 'Pin to keep visible in every folder'}
@@ -1956,7 +1953,18 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
           // user across folders, so cross-folder links are worth surfacing).
           const myLinks = linksFor ? linksFor(note.id) : [];
           return (
-            <button onClick={e=>{e.stopPropagation(); onStartLink && onStartLink();}}
+            <button
+              onPointerDown={e=>{ btnDownRef.current = {x:e.clientX, y:e.clientY}; }}
+              onClick={e=>{
+                e.stopPropagation();
+                const d = btnDownRef.current;
+                btnDownRef.current = null;
+                if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) >= 6) {
+                  e.preventDefault();
+                  return;
+                }
+                onStartLink && onStartLink();
+              }}
               title={myLinks.length ? `${myLinks.length} link${myLinks.length>1?'s':''} · click to add another` : 'Link to another note'}
               style={{...btnS(ink), opacity: myLinks.length ? 0.95 : 0.65, position:'relative'}}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth="2" strokeLinecap="round">
@@ -1973,7 +1981,19 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
             </button>
           );
         })()}
-        <button onClick={e=>{e.stopPropagation(); onDelete();}} title="Delete" style={btnS(ink)}>
+        <button
+          onPointerDown={e=>{ btnDownRef.current = {x:e.clientX, y:e.clientY}; }}
+          onClick={e=>{
+            e.stopPropagation();
+            const d = btnDownRef.current;
+            btnDownRef.current = null;
+            if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) >= 6) {
+              e.preventDefault();
+              return;
+            }
+            onDelete();
+          }}
+          title="Delete" style={btnS(ink)}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth="2">
             <path d="M6 6l12 12M18 6L6 18"/>
           </svg>
