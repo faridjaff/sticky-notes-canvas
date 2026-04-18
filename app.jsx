@@ -562,6 +562,8 @@ function AppInner({ store, setKey, exportNow, importNow }) {
         query={query} setQuery={setQuery}
         onNewNote={createNote}
         onNewFolder={createFolder}
+        onExport={exportNow}
+        onImport={importNow}
       />
 
       <FoldersDrawer T={T} tweaks={tweaks}
@@ -618,7 +620,7 @@ function AppInner({ store, setKey, exportNow, importNow }) {
         />
       )}
 
-      {(tweakActive || prefsOpen) && <TweakPanel T={T} tweaks={tweaks} update={updateTweak} onClose={()=>setPrefsOpen(false)} onExport={exportNow} onImport={importNow}/>}
+      {(tweakActive || prefsOpen) && <TweakPanel T={T} tweaks={tweaks} update={updateTweak} onClose={()=>setPrefsOpen(false)}/>}
 
       <StatusBar T={T} tweaks={tweaks}
         folderName={currentFolderName}
@@ -632,8 +634,20 @@ function AppInner({ store, setKey, exportNow, importNow }) {
 /* ==================================================================== */
 /* TOP CHROME                                                            */
 /* ==================================================================== */
-function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, onNewFolder}) {
+function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, onNewFolder, onExport, onImport}) {
   const isTerm = tweaks.theme==='terminal';
+  const [backupOpen, setBackupOpen] = useState(false);
+
+  useEffect(() => {
+    if (!backupOpen) return;
+    const close = (e) => {
+      if (e.target.closest('[data-backup-menu]')) return;
+      setBackupOpen(false);
+    };
+    const id = setTimeout(() => window.addEventListener('mousedown', close), 0);
+    return () => { clearTimeout(id); window.removeEventListener('mousedown', close); };
+  }, [backupOpen]);
+
   return (
     <div style={{
       height:54, background:T.panelBg, borderBottom:`1px solid ${T.panelBorder}`,
@@ -667,6 +681,41 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
           <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
           <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
         </svg>
+      </div>
+
+      <div data-backup-menu style={{position:'relative'}}>
+        <button onClick={()=>setBackupOpen(o=>!o)} title="Export or import notes" style={{
+          height:30, padding:'0 12px', borderRadius: isTerm?2:8,
+          background:'#000', color:'#fff', border:`1px solid ${T.panelBorder}`,
+          fontWeight:500, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6,
+        }}>
+          {isTerm?'backup':'Backup'} <span style={{fontSize:9, opacity:.7, marginTop:1}}>▾</span>
+        </button>
+        {backupOpen && (
+          <div data-backup-menu style={{
+            position:'absolute', top:36, right:0, minWidth:160, zIndex:30000,
+            background:T.panelBg, border:`1px solid ${T.panelBorder}`,
+            borderRadius: isTerm?2:8, boxShadow:'0 8px 22px rgba(0,0,0,.15)',
+            padding:4, fontFamily:'inherit',
+          }}>
+            <button onClick={()=>{setBackupOpen(false); onExport && onExport();}} style={{
+              display:'block', width:'100%', textAlign:'left',
+              padding:'8px 10px', background:'transparent', border:'none',
+              color:T.panelText, fontSize:13, cursor:'pointer', borderRadius: isTerm?2:6,
+            }} onMouseEnter={e=>e.currentTarget.style.background=`${withA(T.panelText,.06)}`}
+               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+              Export Notes…
+            </button>
+            <button onClick={()=>{setBackupOpen(false); onImport && onImport();}} style={{
+              display:'block', width:'100%', textAlign:'left',
+              padding:'8px 10px', background:'transparent', border:'none',
+              color:T.panelText, fontSize:13, cursor:'pointer', borderRadius: isTerm?2:6,
+            }} onMouseEnter={e=>e.currentTarget.style.background=`${withA(T.panelText,.06)}`}
+               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+              Import Notes…
+            </button>
+          </div>
+        )}
       </div>
 
       <button onClick={onNewFolder} style={{
@@ -1779,7 +1828,7 @@ function FoldersDrawer({T, tweaks, folders, notes, currentFolder, setCurrentFold
 /* ==================================================================== */
 /* TWEAK PANEL                                                           */
 /* ==================================================================== */
-function TweakPanel({T, tweaks, update, onClose, onExport, onImport}) {
+function TweakPanel({T, tweaks, update, onClose}) {
   return (
     <div style={{
       position:'fixed', right:16, bottom:44, width:280, zIndex:90000,
@@ -1817,11 +1866,6 @@ function TweakPanel({T, tweaks, update, onClose, onExport, onImport}) {
       <div style={{display:'flex', alignItems:'center', gap:8}}>
         <input type="checkbox" checked={tweaks.tilt !== false} onChange={e=>update({tilt:e.target.checked})}/>
         <span style={{fontSize:12}}>Tilt notes at a slight angle</span>
-      </div>
-      <Label>Backup</Label>
-      <div style={{display:'flex', gap:8}}>
-        <button onClick={onExport} style={{flex:1, height:30, borderRadius:6, background:'transparent', border:`1px solid ${T.panelBorder}`, color:T.panelText, fontWeight:600, fontSize:12, cursor:'pointer'}}>Export…</button>
-        <button onClick={onImport} style={{flex:1, height:30, borderRadius:6, background:'transparent', border:`1px solid ${T.panelBorder}`, color:T.panelText, fontWeight:600, fontSize:12, cursor:'pointer'}}>Import…</button>
       </div>
     </div>
   );
