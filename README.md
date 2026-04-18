@@ -1,6 +1,6 @@
 <div align="center">
 
-![Sticky Notes banner](readme-assets/00-banner.jpg)
+![Sticky Notes banner](readme-assets/00-banner.png)
 
 # Sticky Notes
 
@@ -29,11 +29,11 @@ This is that app. It runs on **Linux, macOS, and in the browser**.
 
 **Your whole desk, at a glance.** Pan, zoom, and drop notes wherever they feel right. Link two notes by clicking the link icon on one and then the other — connections show up as dashed arrows on the canvas.
 
-![Workspace overview](readme-assets/01-hero.jpg)
+![Workspace overview](readme-assets/01-hero.png)
 
 **Folders that aren't an afterthought.** Colored folder badges, per-folder note counts, and a drawer that actually gets out of the way when you want it to.
 
-![Zoomed out view](readme-assets/02-overview.jpg)
+![Zoomed out view](readme-assets/02-overview.png)
 
 **Three looks — because a 2pm notes session and a 2am notes session are not the same notes session.**
 
@@ -41,8 +41,8 @@ Paper is the default. Flat if you want something quieter. Terminal if you've mad
 
 <table>
 <tr>
-<td><img src="readme-assets/04-flat.jpg" alt="Flat theme" /></td>
-<td><img src="readme-assets/03-terminal.jpg" alt="Terminal theme" /></td>
+<td><img src="readme-assets/04-flat.png" alt="Flat theme" /></td>
+<td><img src="readme-assets/03-terminal.png" alt="Terminal theme" /></td>
 </tr>
 <tr>
 <td align="center"><i>Flat</i></td>
@@ -52,7 +52,7 @@ Paper is the default. Flat if you want something quieter. Terminal if you've mad
 
 **Close up.** Markdown body, link arrows, color-coded folder badges. Click the red pushpin in a note's header — pinned notes follow you into every folder, so the important stuff is always one click away.
 
-![Close-up of notes with link arrow](readme-assets/05-closeup.jpg)
+![Close-up of notes with link arrow](readme-assets/05-closeup.png)
 
 ---
 
