@@ -27,13 +27,11 @@ This is that app. It runs on **Linux, macOS, and in the browser**.
 
 ## Screenshots
 
-**Your whole desk, at a glance.** Pan, zoom, and drop notes wherever they feel right. Link two notes by clicking the link icon on one and then the other — connections show up as dashed arrows on the canvas.
+**Your whole desk, at a glance.** Pan, zoom, and drop notes wherever they feel right. `[[wiki-links]]` between notes render as dashed arrows on the canvas.
 
 ![Workspace overview](readme-assets/01-hero.png)
 
 **Folders that aren't an afterthought.** Colored folder badges, per-folder note counts, and a drawer that actually gets out of the way when you want it to.
-
-![Zoomed out view](readme-assets/02-overview.png)
 
 **Three looks — because a 2pm notes session and a 2am notes session are not the same notes session.**
 
@@ -41,8 +39,8 @@ Paper is the default. Flat if you want something quieter. Terminal if you've mad
 
 <table>
 <tr>
-<td><img src="readme-assets/04-flat.png" alt="Flat theme" /></td>
-<td><img src="readme-assets/03-terminal.png" alt="Terminal theme" /></td>
+<td><img src="readme-assets/03-flat.png" alt="Flat theme" /></td>
+<td><img src="readme-assets/02-terminal.png" alt="Terminal theme" /></td>
 </tr>
 <tr>
 <td align="center"><i>Flat</i></td>
@@ -50,9 +48,9 @@ Paper is the default. Flat if you want something quieter. Terminal if you've mad
 </tr>
 </table>
 
-**Close up.** Markdown body, link arrows, color-coded folder badges. Click the red pushpin in a note's header — pinned notes follow you into every folder, so the important stuff is always one click away.
+**Close up.** Markdown, tags, pushpins, link arrows. Click the red pushpin in the corner to pin — pinned notes stay on top.
 
-![Close-up of notes with link arrow](readme-assets/05-closeup.png)
+![Close-up of notes with link arrow](readme-assets/04-closeup.png)
 
 ---
 
@@ -82,16 +80,16 @@ A short list, because the whole point of this project is that somebody should ha
 
 Grab the latest from [**Releases**](https://github.com/faridjaff/sticky-notes/releases/latest) and pick the file for your platform:
 
-#### Note for macOS
-
-The macOS builds are not code-signed. If your Mac refuses to open the downloaded app, build from source instead — instructions below. If this project gathers enough traction, I'll look into the Apple Developer Program so future Mac builds are signed and open with no friction.
-
 | Platform | File | How to install |
 |---|---|---|
 | **Ubuntu / Debian** | `sticky-notes_<ver>_amd64.deb` | `sudo dpkg -i sticky-notes_<ver>_amd64.deb` |
 | **Linux (portable)** | `Sticky Notes-<ver>.AppImage` | `chmod +x` and double-click — no install needed |
 | **macOS — Apple Silicon (M-series)** | `Sticky Notes-<ver>-arm64.dmg` | mount → drag to `/Applications` |
 | **macOS — Intel** | `Sticky Notes-<ver>.dmg` | mount → drag to `/Applications` |
+
+#### Note for macOS
+
+The macOS builds are not code-signed. If your Mac refuses to open the downloaded app, build from source instead — instructions below.
 
 ### Web (no install)
 
