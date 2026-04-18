@@ -1923,6 +1923,14 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
   const [menu, setMenu] = useState(null);
   const el = useRef(null);
 
+  // Snapshot the title/body at the moment the user enters edit mode so that
+  // pressing Escape reverts to what it was. The input stays controlled (live
+  // onChange) — Escape just calls onChange with the snapshot and exits.
+  const origTitleRef = useRef('');
+  const origBodyRef  = useRef('');
+  useEffect(() => { if (editingTitle) origTitleRef.current = note.title; }, [editingTitle]);
+  useEffect(() => { if (editing)      origBodyRef.current  = note.body;  }, [editing]);
+
   useEffect(() => { refCb(el.current); return ()=>refCb(null); }, [refCb]);
 
   const col = NOTE_COLORS.find(c => c.id===note.color) || NOTE_COLORS[0];
@@ -2084,7 +2092,10 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
           <input autoFocus value={note.title}
             onChange={e=>onChange({title:e.target.value})}
             onBlur={()=>setEditingTitle(false)}
-            onKeyDown={e=>{ if(e.key==='Enter') setEditingTitle(false); }}
+            onKeyDown={e=>{
+              if (e.key==='Enter')  { setEditingTitle(false); }
+              if (e.key==='Escape') { onChange({title:origTitleRef.current}); setEditingTitle(false); }
+            }}
             style={{flex:1, background:'transparent', border:'none', outline:'none', font:'inherit', color:'inherit', fontWeight:600, fontSize:12}}
           />
         ) : (
@@ -2157,6 +2168,9 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
           <textarea autoFocus value={note.body}
             onChange={e=>onChange({body:e.target.value})}
             onBlur={()=>setEditing(false)}
+            onKeyDown={e=>{
+              if (e.key==='Escape') { onChange({body:origBodyRef.current}); setEditing(false); }
+            }}
             style={{width:'100%', height:'100%', resize:'none', border:'none', outline:'none',
               background:'transparent', color:'inherit', font:'inherit', lineHeight:'inherit'}}
           />
