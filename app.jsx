@@ -1018,6 +1018,15 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
     });
   };
 
+  // Escape cancels link-drawing. Kept in its own effect so the listener
+  // isn't torn down on every mousemove (which replaces linkingFrom).
+  useEffect(() => {
+    if (!linkingFrom) return;
+    const onKey = (e) => { if (e.key === 'Escape') setLinkingFrom(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [!!linkingFrom]);
+
   // While in "linking" mode, track cursor and click-to-connect.
   useEffect(() => {
     if (!linkingFrom) return;
@@ -1040,21 +1049,38 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
       }
       setLinkingFrom(null);
     };
-    const onKey = (e) => { if (e.key==='Escape') setLinkingFrom(null); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('click', onClick, true);
-    window.addEventListener('keydown', onKey);
     return () => {
       clearTimeout(armTimer);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('click', onClick, true);
-      window.removeEventListener('keydown', onKey);
     };
   }, [linkingFrom, view.x, view.y, view.z, addLink]);
 
   const cursor = panning ? 'grabbing' : (spaceHeld ? 'grab' : (linkingFrom ? 'crosshair' : 'default'));
 
   return (
+    <>
+    {linkingFrom && (
+      <div style={{
+        position:'absolute', top:64, left:'50%', transform:'translateX(-50%)',
+        background:T.panelBg, color:T.panelText, padding:'8px 16px',
+        borderRadius:8, border:`1px solid ${T.panelBorder}`,
+        fontSize:12, fontWeight:500, zIndex:25000,
+        boxShadow:'0 4px 16px rgba(0,0,0,.18)',
+        userSelect:'none', pointerEvents:'none',
+        display:'flex', alignItems:'center', gap:10,
+      }}>
+        <span>Click another note to link</span>
+        <span style={{opacity:.5}}>·</span>
+        <kbd style={{
+          fontFamily:'ui-monospace, monospace', fontSize:11, padding:'2px 6px',
+          background:'rgba(0,0,0,.06)', border:`1px solid ${T.panelBorder}`, borderRadius:4,
+        }}>Esc</kbd>
+        <span>to cancel</span>
+      </div>
+    )}
     <div id="desk" ref={deskRef}
       onContextMenu={(e)=>{ if (e.target.id==='desk' || e.target.id==='desk-inner' || e.target.id==='desk-grid') { e.preventDefault(); setDeskMenu({x:e.clientX, y:e.clientY}); }}}
       onClick={(e)=>{ if (e.target.id==='desk' || e.target.id==='desk-inner' || e.target.id==='desk-grid') setDeskMenu(null); }}
@@ -1237,6 +1263,7 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
         }}>🔗 click a note to link · esc to cancel</div>
       )}
     </div>
+    </>
   );
 }
 
@@ -1407,13 +1434,18 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
         <button onClick={e=>{e.stopPropagation(); onChange({pinned:!note.pinned});}}
           title={note.pinned ? 'Pinned (visible in every folder) · click to unpin' : 'Pin to keep visible in every folder'}
           style={{...btnS(ink), padding:2}}>
-          <svg width="14" height="14" viewBox="0 0 24 24"
-               fill={note.pinned ? '#dc2626' : 'none'}
-               stroke={note.pinned ? '#dc2626' : ink}
-               strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="17" x2="12" y2="22"/>
-            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
-          </svg>
+          {note.pinned ? (
+            <img src="./assets/pin-filled.png" width="16" height="16" alt="Pinned"
+                 style={{display:'block'}} draggable={false}/>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 100 100" fill="none" stroke={ink} strokeWidth="4" strokeLinejoin="round">
+              <g transform="translate(50 50) rotate(-25)">
+                <polygon points="-5,0 5,0 1.4,42 -1.4,42"/>
+                <polygon points="-10,-6 10,-6 7,2 -7,2"/>
+                <circle cx="0" cy="-22" r="22"/>
+              </g>
+            </svg>
+          )}
         </button>
         {folder && <span title={folder.name} style={{width:6, height:6, background:folder.hue, borderRadius:'50%', flex:'none'}}/>}
         {editingTitle ? (

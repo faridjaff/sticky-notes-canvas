@@ -30,6 +30,7 @@
       "index.html",
       "app.jsx",
       "vendor/**",
+      "assets/**",
       "build/icon.png",
       "build/icons/**",
       "package.json"
