@@ -36,7 +36,10 @@ jobs:
         run: npm install
 
       - name: Build (electron-builder picks the host platform)
-        run: npm run build
+        # --publish never tells electron-builder to JUST build, not try to publish to
+        # GitHub itself. The upload step below (action-gh-release) does the publishing,
+        # which keeps the release-creation logic in one place.
+        run: npx electron-builder --publish never
         env:
           # Skip code-signing on macOS so the build doesn't fail without an Apple Dev cert.
           # Users get a Gatekeeper warning on first launch; right-click → Open bypasses it.
