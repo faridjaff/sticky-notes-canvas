@@ -142,6 +142,14 @@ function pickJSONFile() {
 /* ---------- Persisted store (Electron-aware) ---------- */
 function withDefaults(raw) {
   const src = raw || {};
+  // First-paint default for the folders drawer. On mobile (narrow viewport,
+  // no Electron bridge), default closed so the canvas is visible on load;
+  // on desktop, default open. Once the user toggles it, that choice is
+  // persisted as a boolean and this branch never re-runs for that user.
+  // Matches the viewport threshold used by MobileDemoBanner.
+  const defaultDrawer = (typeof window !== 'undefined'
+    && !window.stickyAPI
+    && window.innerWidth <= MOBILE_BANNER_MAX_WIDTH) ? false : true;
   return {
     tweaks:  src.tweaks  ?? TWEAK_DEFAULTS,
     folders: src.folders ?? SEED.folders,
@@ -149,7 +157,7 @@ function withDefaults(raw) {
     links:   src.links   ?? (SEED.links || []),
     cwd:     src.cwd     ?? 'root',
     view:    src.view    ?? { x: 0, y: 0, z: 1 },
-    drawer:  typeof src.drawer === 'boolean' ? src.drawer : true,
+    drawer:  typeof src.drawer === 'boolean' ? src.drawer : defaultDrawer,
     folderOrder: Array.isArray(src.folderOrder) ? src.folderOrder : [],
   };
 }
@@ -468,6 +476,82 @@ function UpdateBanner({ info, onDismiss }) {
 }
 
 /* ==================================================================== */
+/* MOBILE DEMO BANNER                                                    */
+/* ==================================================================== */
+// A thin "web demo — download the native app" strip that only shows on
+// narrow viewports (phones). Hidden entirely in the Electron desktop build
+// (stickyAPI is the bridge exposed by preload.js), and dismissible per
+// session with the close state persisted to localStorage so it stays
+// dismissed across reloads.
+const MOBILE_BANNER_DISMISSED_KEY = 'stickies.mobileBannerDismissed';
+const MOBILE_BANNER_MAX_WIDTH = 640;
+
+function MobileDemoBanner() {
+  // Electron build: never show. The preload script exposes window.stickyAPI,
+  // which is the same signal the rest of the app uses to gate desktop-only
+  // behavior (see the browser/Electron branching in useStickyStore).
+  if (typeof window !== 'undefined' && window.stickyAPI) return null;
+
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth <= MOBILE_BANNER_MAX_WIDTH
+  );
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(MOBILE_BANNER_DISMISSED_KEY) === '1'; }
+    catch { return false; }
+  });
+
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth <= MOBILE_BANNER_MAX_WIDTH);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  if (!narrow || dismissed) return null;
+
+  const onDismiss = () => {
+    try { localStorage.setItem(MOBILE_BANNER_DISMISSED_KEY, '1'); } catch {}
+    setDismissed(true);
+  };
+
+  return (
+    <div style={{
+      flex:'0 0 auto', height:38, width:'100%',
+      display:'flex', alignItems:'center', gap:10,
+      padding:'0 12px',
+      // Warm, slightly darker than the paper wallpaper so it reads as a
+      // system notice without fighting the app's aesthetic.
+      background:'#ede4d1', color:'#3a2f1a',
+      borderBottom:'1px solid #d8cfbc',
+      fontFamily:'Inter, system-ui, sans-serif', fontSize:12,
+      zIndex:20001,
+    }}>
+      <span style={{flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+        Web demo — full app runs natively on Linux &amp; Mac
+      </span>
+      <a
+        href="https://github.com/faridjaff/sticky-notes/releases"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color:'#d97757', fontWeight:600, textDecoration:'none',
+          whiteSpace:'nowrap',
+        }}
+      >
+        Download →
+      </a>
+      <button
+        onClick={onDismiss}
+        aria-label="Dismiss"
+        style={{
+          background:'transparent', border:'none', color:'#7a6f5b',
+          cursor:'pointer', fontSize:18, lineHeight:1, padding:'0 4px',
+        }}
+      >×</button>
+    </div>
+  );
+}
+
+/* ==================================================================== */
 /* APP                                                                  */
 /* ==================================================================== */
 function App() {
@@ -475,10 +559,13 @@ function App() {
   const update = useUpdateCheck();
   if (!store) return <Loading/>;
   return (
-    <>
-      {update.available && <UpdateBanner info={update.available} onDismiss={update.dismiss}/>}
-      <AppInner store={store} setKey={setKey} exportNow={exportNow} importNow={importNow} />
-    </>
+    <div style={{display:'flex', flexDirection:'column', height:'100%'}}>
+      <MobileDemoBanner />
+      <div style={{flex:'1 1 auto', minHeight:0, position:'relative'}}>
+        {update.available && <UpdateBanner info={update.available} onDismiss={update.dismiss}/>}
+        <AppInner store={store} setKey={setKey} exportNow={exportNow} importNow={importNow} />
+      </div>
+    </div>
   );
 }
 
@@ -872,6 +959,21 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
   const isTerm = tweaks.theme==='terminal';
   const [backupOpen, setBackupOpen] = useState(false);
 
+  // Narrow-viewport detection, used to hide the "Sticky Notes" wordmark on
+  // phones where vertical room is scarce. Tracks resizes so rotating the
+  // device (or opening devtools on desktop) toggles the wordmark back.
+  // Follows the same pattern and threshold as MobileDemoBanner.
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && !window.stickyAPI
+      && window.innerWidth <= MOBILE_BANNER_MAX_WIDTH
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.stickyAPI) return;
+    const onResize = () => setNarrow(window.innerWidth <= MOBILE_BANNER_MAX_WIDTH);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   useEffect(() => {
     if (!backupOpen) return;
     const close = (e) => {
@@ -889,11 +991,11 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
       color:T.panelText,
     }}>
       <AppGlyph T={T} isTerm={isTerm}/>
-      <div style={{fontWeight:600, fontSize:14, letterSpacing:isTerm?0.5:0}}>
+      <div style={{fontWeight:600, fontSize:14, letterSpacing:isTerm?0.5:0, display: narrow?'none':undefined}}>
         {isTerm ? 'stickies' : 'Sticky Notes'}
       </div>
 
-      <div style={{width:1, height:22, background:T.panelBorder, margin:'0 8px'}}/>
+      <div style={{width:1, height:22, background:T.panelBorder, margin:'0 8px', display: narrow?'none':undefined}}/>
 
       <div style={{fontSize:13, color:T.panelText, opacity:.85, fontWeight:500}}>
         {currentFolderName}
@@ -1105,6 +1207,20 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
   const panRef = useRef(null);
   const deskRef = useRef(null);
 
+  // Narrow-viewport detection for touch-pan on the canvas. Matches the
+  // threshold used by MobileDemoBanner and the other mobile gates so that
+  // Electron and desktop browsers are never affected.
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && !window.stickyAPI
+      && window.innerWidth <= MOBILE_BANNER_MAX_WIDTH
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.stickyAPI) return;
+    const onResize = () => setNarrow(window.innerWidth <= MOBILE_BANNER_MAX_WIDTH);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // space bar toggles pan mode
   useEffect(() => {
     const down = (e) => {
@@ -1160,6 +1276,21 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
     }
   };
 
+  // Mobile-only: single-finger drag on the canvas background pans the view.
+  // Gated on narrow viewport (MOBILE_BANNER_MAX_WIDTH) so desktop browsers
+  // and Electron are entirely unaffected. Mirrors the "empty-canvas" target
+  // filter used by the mouse marquee branch so a touch that lands on a
+  // sticky note is passed through untouched (the note's own drag logic
+  // owns that gesture). Strictly additive to onMouseDown.
+  const onTouchStart = (e) => {
+    if (!narrow) return;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    if (!(e.target.id==='desk' || e.target.id==='desk-inner' || e.target.id==='desk-grid')) return;
+    setPanning(true);
+    panRef.current = { sx: t.clientX, sy: t.clientY, vx: view.x, vy: view.y };
+  };
+
   useEffect(() => {
     if (!panning) return;
     const move = (e) => {
@@ -1170,6 +1301,32 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
     return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+  }, [panning]);
+
+  // Touch equivalent of the mouse pan effect above. Registered with
+  // {passive: false} so preventDefault in touchmove reliably suppresses
+  // the browser's default scroll/zoom gesture while the user is panning.
+  // Both this and the mouse effect attach while `panning` is true; they
+  // listen for disjoint event types (touchmove/end vs mousemove/up) so
+  // they don't fight each other regardless of which input started the pan.
+  useEffect(() => {
+    if (!panning) return;
+    const move = (e) => {
+      const p = panRef.current; if (!p) return;
+      if (!e.touches || e.touches.length === 0) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      setView(v => ({ ...v, x: p.vx + (t.clientX - p.sx), y: p.vy + (t.clientY - p.sy) }));
+    };
+    const end = () => { setPanning(false); panRef.current = null; };
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', end);
+    window.addEventListener('touchcancel', end);
+    return () => {
+      window.removeEventListener('touchmove', move, { passive: false });
+      window.removeEventListener('touchend', end);
+      window.removeEventListener('touchcancel', end);
+    };
   }, [panning]);
 
   // Marquee drag: while active, track pointer in world coords; on release, resolve selection.
@@ -1320,7 +1477,8 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
       onClick={(e)=>{ if (e.target.id==='desk' || e.target.id==='desk-inner' || e.target.id==='desk-grid') setDeskMenu(null); }}
       onWheel={onWheel}
       onMouseDown={onMouseDown}
-      style={{position:'absolute', left:0, right:0, top:54, bottom:28, overflow:'hidden', cursor, userSelect: panning?'none':'auto'}}>
+      onTouchStart={onTouchStart}
+      style={{position:'absolute', left:0, right:0, top:54, bottom:28, overflow:'hidden', cursor, userSelect: panning?'none':'auto', touchAction: narrow?'none':undefined}}>
 
       {/* faint grid — lives in screen space, scales with zoom */}
       <div id="desk-grid" style={{
@@ -2225,6 +2383,23 @@ function StatusBar({T, tweaks, folderName, noteCount, folderCount}) {
       <span style={{opacity:.4}}>·</span>
       <span>{folderCount} subfolder{folderCount===1?'':'s'}</span>
       <div style={{flex:1}}/>
+      <a
+        href="https://github.com/faridjaff/sticky-notes"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color:T.muted, textDecoration:'none', cursor:'pointer',
+          display:'inline-flex', alignItems:'center', gap:4,
+        }}
+        onMouseEnter={(e)=>{ e.currentTarget.style.textDecoration='underline'; e.currentTarget.style.color=T.panelText; }}
+        onMouseLeave={(e)=>{ e.currentTarget.style.textDecoration='none'; e.currentTarget.style.color=T.muted; }}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        github
+      </a>
+      <span style={{opacity:.4}}>·</span>
       <span>auto-saved</span>
       <span style={{opacity:.4}}>·</span>
       <span style={{color:T.accent}}>●</span>
