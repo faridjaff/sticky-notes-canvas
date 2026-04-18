@@ -2,7 +2,7 @@
 
 ![Sticky Notes banner](readme-assets/00-banner.png)
 
-### [→ Try the web demo](https://faridjaff.github.io/sticky-notes/)
+### <a href="https://faridjaff.github.io/sticky-notes/" target="_blank" rel="noopener noreferrer">→ Try the web demo</a>
 
 # Sticky Notes
 
