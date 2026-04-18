@@ -337,6 +337,27 @@ function withA(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+const STICKY_CLIPBOARD_MARKER = '<!-- sticky-notes/v1 -->';
+
+function notesToClipboardText(notes) {
+  const human = notes.map(n => (n.title || 'Untitled') + (n.body ? '\n\n' + n.body : '')).join('\n\n---\n\n');
+  const payload = notes.map(n => ({
+    title: n.title, body: n.body, color: n.color,
+    w: n.w, h: n.h, tags: n.tags, pinned: !!n.pinned,
+  }));
+  return human + '\n\n' + STICKY_CLIPBOARD_MARKER + '\n' + JSON.stringify(payload);
+}
+
+function clipboardTextToNotes(text) {
+  const i = text.indexOf(STICKY_CLIPBOARD_MARKER);
+  if (i === -1) return null;
+  const json = text.slice(i + STICKY_CLIPBOARD_MARKER.length).trim();
+  try {
+    const arr = JSON.parse(json);
+    return Array.isArray(arr) ? arr : null;
+  } catch { return null; }
+}
+
 /* ==================================================================== */
 /* APP                                                                  */
 /* ==================================================================== */
@@ -486,6 +507,76 @@ function AppInner({ store, setKey, exportNow, importNow }) {
     setSelectedIds(new Set());
   };
 
+  /* ----- copy / paste ----- */
+  // Resolve which notes a copy action should target. If a specific noteId is
+  // passed (from a context-menu Copy) and that note is part of the current
+  // multi-selection, copy the whole selection. Otherwise copy just that note.
+  // With no noteId, copy whatever is selected.
+  const resolveCopyIds = (noteId) => {
+    if (noteId) {
+      if (selectedIds.has(noteId) && selectedIds.size > 1) return [...selectedIds];
+      return [noteId];
+    }
+    return selectedIds.size ? [...selectedIds] : [];
+  };
+
+  const copySelected = async (noteId) => {
+    const ids = resolveCopyIds(noteId);
+    if (!ids.length) return;
+    const idSet = new Set(ids);
+    // Preserve canvas (z-order) order so the human-readable text reads
+    // top-to-bottom roughly as the user sees the cluster.
+    const ordered = notes.filter(n => idSet.has(n.id));
+    try {
+      await navigator.clipboard.writeText(notesToClipboardText(ordered));
+    } catch (e) {
+      // Clipboard write can fail without user gesture / permissions; silent no-op.
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    let text = '';
+    try { text = await navigator.clipboard.readText(); } catch { return; }
+    if (!text) return;
+    const payload = clipboardTextToNotes(text);
+    if (!payload || !payload.length) return;
+
+    // Random anchor near the visible canvas top-left (same strategy as
+     // moveNotesToFolder). The serialised payload doesn't carry x/y, so we
+    // just offset each pasted note by a small per-index step to avoid a
+    // perfect overlapping stack.
+    const baseX = 80 + Math.random() * 100;
+    const baseY = 80 + Math.random() * 80;
+    const STEP = 24;
+
+    const targetFolder = isAll
+      ? (Object.keys(folders).find(k => k!=='root') || 'root')
+      : currentFolder;
+
+    const newIds = [];
+    const fresh = payload.map((p, idx) => {
+      const id = uid('n');
+      newIds.push(id);
+      zRef.current += 1;
+      return {
+        id,
+        folder: targetFolder,
+        title: typeof p.title === 'string' ? p.title : '',
+        body:  typeof p.body  === 'string' ? p.body  : '',
+        color: p.color || 'yellow',
+        w: typeof p.w === 'number' ? p.w : 260,
+        h: typeof p.h === 'number' ? p.h : 180,
+        x: baseX + STEP * idx,
+        y: baseY + STEP * idx,
+        tags: Array.isArray(p.tags) ? p.tags : [],
+        pinned: !!p.pinned,
+        z: zRef.current,
+      };
+    });
+    setNotes(ns => [...ns, ...fresh]);
+    setSelectedIds(new Set(newIds));
+  };
+
   /* ----- link operations ----- */
   const addLink = (fromId, toId) => {
     if (!fromId || !toId || fromId===toId) return;
@@ -535,7 +626,19 @@ function AppInner({ store, setKey, exportNow, importNow }) {
   /* ----- keyboard ----- */
   useEffect(() => {
     const h = (e) => {
-      if (e.target.matches('input, textarea')) return;
+      if (e.target.matches('input, textarea, [contenteditable], [contenteditable="true"]')) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase()==='c') {
+        if (selectedIds.size === 0) return;
+        e.preventDefault();
+        copySelected();
+        return;
+      }
+      if (mod && e.key.toLowerCase()==='v') {
+        e.preventDefault();
+        pasteFromClipboard();
+        return;
+      }
       if (e.key.toLowerCase()==='n') { e.preventDefault(); createNote(); }
       if (e.key.toLowerCase()==='f' && (e.metaKey||e.ctrlKey)) { e.preventDefault(); document.getElementById('qs')?.focus(); }
       if (e.key==='Escape') { setSelectedIds(new Set()); }
@@ -598,6 +701,7 @@ function AppInner({ store, setKey, exportNow, importNow }) {
         moveNoteToFolder={moveNoteToFolder}
         moveNotesToFolder={moveNotesToFolder}
         onCreateNote={createNote}
+        onCopyNotes={copySelected}
         view={store.view}
         setView={(v) => setKey('view', v)}
         drawerOpen={store.drawer}
@@ -859,7 +963,7 @@ function KeyHint({T, keys, label}) {
 function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, linkLines,
   links, addLink, removeLink, linksFor,
   updateNote, bringToFront, focusNote, onDeleteNote, selectedIds, setSelectedIds, setNotes,
-  jumpToNote, moveNoteToFolder, moveNotesToFolder, onCreateNote,
+  jumpToNote, moveNoteToFolder, moveNotesToFolder, onCreateNote, onCopyNotes,
   view, setView, drawerOpen}) {
 
   const [deskMenu, setDeskMenu] = useState(null);
@@ -1182,6 +1286,7 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
             allNotes={allNotes}
             linksFor={linksFor}
             onMoveNotesToFolder={moveNotesToFolder}
+            onCopy={()=>onCopyNotes && onCopyNotes(n.id)}
             onAddLink={(toId)=>addLink(n.id, toId)}
             onStartLink={()=>setLinkingFrom({id:n.id, x:n.x+n.w/2, y:n.y+n.h/2})}
             onJumpToNote={jumpToNote}
@@ -1299,7 +1404,7 @@ function kbdS(T) { return {fontFamily:'ui-monospace, monospace', fontSize:11, pa
 /* ==================================================================== */
 function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setSelectedIds, setNotes,
   onFocus, onChange, onDelete, onLinkClick, childFolders, onMoveToFolder, onMoveNotesToFolder, zoom=1,
-  allNotes=[], linksFor, onAddLink, onStartLink, onJumpToNote}) {
+  allNotes=[], linksFor, onAddLink, onStartLink, onJumpToNote, onCopy}) {
   const zRef = useRef(zoom); zRef.current = zoom;
   const [editing, setEditing] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -1542,6 +1647,10 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
         const candidates = allNotes.filter(n => n.id !== note.id).slice(0, 20);
         return (
           <ContextMenu T={T} x={menu.x-note.x} y={menu.y-note.y} onClose={()=>setMenu(null)} items={[
+            {label: (selected && selectedIds && selectedIds.size > 1)
+              ? 'Copy ' + selectedIds.size + ' notes'
+              : 'Copy', onClick: () => onCopy && onCopy()},
+            {divider:true},
             {label:'Edit title', onClick:()=>setEditingTitle(true)},
             {label:'Edit body', onClick:()=>setEditing(true)},
             {label: note.pinned?'Unpin':'Pin to top', onClick:()=>onChange({pinned:!note.pinned})},
