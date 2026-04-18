@@ -11,6 +11,16 @@ contextBridge.exposeInMainWorld('stickyAPI', {
   appVersion: ipcRenderer.sendSync('app:version-sync'),
   // Open https URLs in the user's default browser. Used by the update banner.
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  // Force a fresh update check (menu → Help → Check for Updates…). The main
+  // process sends menu:checkUpdates; the renderer calls this back to show
+  // a native dialog for the "up to date" and "check failed" branches
+  // (the "update available" branch uses the in-app banner instead).
+  showUpdateResult: (payload) => ipcRenderer.invoke('update:show-result', payload),
+  onMenuCheckUpdates: (cb) => {
+    const wrapped = () => cb();
+    ipcRenderer.on('menu:checkUpdates', wrapped);
+    return () => ipcRenderer.removeListener('menu:checkUpdates', wrapped);
+  },
   onMenuExport: (cb) => {
     const wrapped = (_event, ...args) => cb(...args);
     ipcRenderer.on('menu:export', wrapped);

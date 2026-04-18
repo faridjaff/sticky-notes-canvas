@@ -480,31 +480,57 @@ function downloadUrlForPlatform(version) {
 
 function useUpdateCheck() {
   const [available, setAvailable] = useState(null);
-  useEffect(() => {
-    if (!window.stickyAPI) return;  // Skip in browser
+
+  // Shared fetch+compare. `force` bypasses the throttle and reports the
+  // "up to date" / "check failed" outcomes back to the main process so it
+  // can show a native dialog — the scheduled once-a-day check stays silent.
+  const runCheck = useCallback(async (force) => {
+    if (!window.stickyAPI) return;
     const current = window.stickyAPI.appVersion || '0.0.0';
     const dismissed = (() => { try { return localStorage.getItem('stickies.dismissedUpdate') || ''; } catch { return ''; } })();
-    const lastCheckRaw = (() => { try { return localStorage.getItem('stickies.lastUpdateCheck'); } catch { return null; } })();
-    const lastCheck = lastCheckRaw ? parseInt(lastCheckRaw, 10) : 0;
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    if (Date.now() - lastCheck < ONE_DAY) return;
-
-    (async () => {
-      try {
-        const res = await fetch('https://api.github.com/repos/faridjaff/sticky-notes/releases/latest', {
-          headers: { 'Accept': 'application/vnd.github+json' },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        try { localStorage.setItem('stickies.lastUpdateCheck', String(Date.now())); } catch {}
-        const tag = (json.tag_name || '').replace(/^v/, '');
-        if (!tag) return;
-        if (cmpSemver(tag, current) <= 0) return;     // Not newer
-        if (tag === dismissed) return;                 // User already said no to this version
-        setAvailable({ version: tag, url: downloadUrlForPlatform(tag) });
-      } catch { /* network error — silent */ }
-    })();
+    if (!force) {
+      const lastCheckRaw = (() => { try { return localStorage.getItem('stickies.lastUpdateCheck'); } catch { return null; } })();
+      const lastCheck = lastCheckRaw ? parseInt(lastCheckRaw, 10) : 0;
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      if (Date.now() - lastCheck < ONE_DAY) return;
+    }
+    try {
+      const res = await fetch('https://api.github.com/repos/faridjaff/sticky-notes/releases/latest', {
+        headers: { 'Accept': 'application/vnd.github+json' },
+      });
+      if (!res.ok) {
+        if (force) window.stickyAPI.showUpdateResult?.({type:'error'});
+        return;
+      }
+      const json = await res.json();
+      try { localStorage.setItem('stickies.lastUpdateCheck', String(Date.now())); } catch {}
+      const tag = (json.tag_name || '').replace(/^v/, '');
+      if (!tag) {
+        if (force) window.stickyAPI.showUpdateResult?.({type:'error'});
+        return;
+      }
+      if (cmpSemver(tag, current) <= 0) {
+        if (force) window.stickyAPI.showUpdateResult?.({type:'uptodate'});
+        return;
+      }
+      // On an explicit manual check, ignore a prior dismissal — the user
+      // just asked, so give them the banner even if they said no to this
+      // version last time.
+      if (!force && tag === dismissed) return;
+      setAvailable({ version: tag, url: downloadUrlForPlatform(tag) });
+    } catch {
+      if (force) window.stickyAPI.showUpdateResult?.({type:'error'});
+    }
   }, []);
+
+  // Once-a-day scheduled check on mount (silent).
+  useEffect(() => { runCheck(false); }, [runCheck]);
+
+  // Subscribe to the Help → Check for Updates… menu item.
+  useEffect(() => {
+    if (!window.stickyAPI?.onMenuCheckUpdates) return;
+    return window.stickyAPI.onMenuCheckUpdates(() => runCheck(true));
+  }, [runCheck]);
 
   const dismiss = useCallback(() => {
     if (available) {
