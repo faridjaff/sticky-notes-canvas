@@ -718,23 +718,6 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
         )}
       </div>
 
-      <button onClick={onNewFolder} style={{
-        height:30, padding:'0 12px', borderRadius: isTerm?2:8,
-        background:'transparent', color:T.panelText, border:`1px solid ${T.panelBorder}`,
-        fontWeight:500, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6,
-      }}>
-        <FolderIcon size={13} color={T.panelText}/> {isTerm?'mkdir':'New folder'}
-      </button>
-
-      <button onClick={onNewNote} style={{
-        height:30, padding:'0 14px', borderRadius: isTerm?2:8,
-        background:T.accent, color: isTerm?'#0a0c10':'#fff',
-        border:'none', fontWeight:600, fontSize:13, cursor:'pointer',
-        display:'flex', alignItems:'center', gap:6,
-      }}>
-        <span style={{fontSize:16, lineHeight:1, marginTop:-2}}>+</span>
-        {isTerm?'new':'New note'}
-      </button>
     </div>
   );
 }
