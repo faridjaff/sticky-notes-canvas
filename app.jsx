@@ -1931,6 +1931,26 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
   useEffect(() => { if (editingTitle) origTitleRef.current = note.title; }, [editingTitle]);
   useEffect(() => { if (editing)      origBodyRef.current  = note.body;  }, [editing]);
 
+  // When the user clicks outside the note while editing, exit edit mode so
+  // the cursor visibly goes away and further typing doesn't keep landing in
+  // the note. The native blur event doesn't fire here because the desk's
+  // own pointerdown handler calls preventDefault (to suppress text selection
+  // during marquee/pan), which also suppresses the browser's default
+  // "move focus away from the current input" behavior. This document-level
+  // listener bypasses that by explicitly exiting edit mode when the click
+  // lands outside the note's DOM.
+  useEffect(() => {
+    if (!editing && !editingTitle) return;
+    const onOutsideDown = (e) => {
+      if (el.current && !el.current.contains(e.target)) {
+        if (editingTitle) setEditingTitle(false);
+        if (editing)      setEditing(false);
+      }
+    };
+    document.addEventListener('pointerdown', onOutsideDown);
+    return () => document.removeEventListener('pointerdown', onOutsideDown);
+  }, [editing, editingTitle]);
+
   useEffect(() => { refCb(el.current); return ()=>refCb(null); }, [refCb]);
 
   const col = NOTE_COLORS.find(c => c.id===note.color) || NOTE_COLORS[0];
