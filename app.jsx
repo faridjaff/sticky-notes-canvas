@@ -492,6 +492,7 @@ function useUpdateCheck() {
   // everywhere.
   const [info, setInfo] = useState(null);   // { title, message, detail? }
   const isSnap = !!window.stickyAPI?.isSnap;
+  const isFlatpak = !!window.stickyAPI?.isFlatpak;
 
   const runCheck = useCallback(async (force) => {
     if (!window.stickyAPI) return;
@@ -533,6 +534,17 @@ function useUpdateCheck() {
         });
         return;
       }
+      // Flatpak users get updates via the software center. The .deb banner
+      // doesn't apply. On explicit force-check, surface a flatpak-friendly
+      // hint instead.
+      if (isFlatpak) {
+        if (force) setInfo({
+          title: 'Update Available',
+          message: `Version ${tag} is available`,
+          detail: `Flatpak will auto-update via your software center, or run:\n\nflatpak update io.github.faridjaff.StickyNotesCanvas`,
+        });
+        return;
+      }
       // On an explicit manual check, ignore a prior dismissal — the user
       // just asked, so give them the banner even if they said no to this
       // version last time.
@@ -541,10 +553,11 @@ function useUpdateCheck() {
     } catch {
       if (force) setInfo({title:'Check for Updates', message:"Couldn't check for updates", detail:"Network error — make sure you're online."});
     }
-  }, [isSnap]);
+  }, [isSnap, isFlatpak]);
 
-  // Scheduled daily check skips entirely on snap (snapd handles refresh).
-  useEffect(() => { if (!isSnap) runCheck(false); }, [runCheck, isSnap]);
+  // Scheduled daily check skips entirely on snap (snapd handles refresh) or
+  // flatpak (software center handles updates).
+  useEffect(() => { if (!isSnap && !isFlatpak) runCheck(false); }, [runCheck, isSnap, isFlatpak]);
 
   // Help → Check for Updates… — fires regardless of channel.
   useEffect(() => {

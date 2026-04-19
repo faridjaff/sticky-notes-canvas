@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('stickyAPI', {
   // (snap auto-refresh handles it), and surface a snap-friendly upgrade
   // hint when the user explicitly checks for updates.
   isSnap: !!process.env.SNAP_NAME,
+  // Whether the running app is the flatpak build. flatpak-portal/bwrap sets
+  // FLATPAK_ID to the app-id inside the sandbox. Used to: skip the daily
+  // update check (flatpak handles updates via the software center), and
+  // surface a flatpak-friendly upgrade hint on explicit force-check.
+  isFlatpak: !!process.env.FLATPAK_ID,
   // Open https URLs in the user's default browser. Used by the update banner.
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   onMenuCheckUpdates: (cb) => {
