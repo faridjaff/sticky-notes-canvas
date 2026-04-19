@@ -93,6 +93,7 @@ Or grab the latest from [**Releases**](https://github.com/faridjaff/sticky-notes
 | **Ubuntu / any distro with snapd** | (Snap Store) | `sudo snap install sticky-notes-canvas` |
 | **Ubuntu / Debian** | `sticky-notes-canvas_<ver>_amd64.deb` | `sudo dpkg -i sticky-notes-canvas_<ver>_amd64.deb` |
 | **Linux (portable)** | `Sticky Notes-<ver>.AppImage` | `chmod +x` and double-click — no install needed |
+| **macOS — via Homebrew** | (tap) | `brew install --cask faridjaff/tap/sticky-notes-canvas` |
 | **macOS — Apple Silicon (M-series)** | `Sticky Notes-<ver>-arm64.dmg` | mount → drag to `/Applications` |
 | **macOS — Intel** | `Sticky Notes-<ver>.dmg` | mount → drag to `/Applications` |
 
