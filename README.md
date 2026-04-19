@@ -2,7 +2,7 @@
 
 ![Sticky Notes banner](readme-assets/00-banner.png)
 
-### <a href="https://faridjaff.github.io/sticky-notes/" target="_blank" rel="noopener noreferrer">→ Try the web demo</a>
+### <a href="https://faridjaff.github.io/sticky-notes-canvas/" target="_blank" rel="noopener noreferrer">→ Try the web demo</a>
 
 # Sticky Notes
 
@@ -86,7 +86,7 @@ Easiest path on Ubuntu — install from the Snap Store, auto-updates included:
 sudo snap install sticky-notes-canvas
 ```
 
-Or grab the latest from [**Releases**](https://github.com/faridjaff/sticky-notes/releases/latest) and pick the file for your platform:
+Or grab the latest from [**Releases**](https://github.com/faridjaff/sticky-notes-canvas/releases/latest) and pick the file for your platform:
 
 | Platform | File | How to install |
 |---|---|---|
@@ -103,7 +103,7 @@ The macOS builds are not code-signed. If your Mac refuses to open the downloaded
 
 ### Web (no install)
 
-Hosted version: <https://faridjaff.github.io/sticky-notes/>. Each visitor's notes live in their own browser's `localStorage` — separate from any other browser, separate from the desktop app. Survives refresh; cleared if you wipe site data.
+Hosted version: <https://faridjaff.github.io/sticky-notes-canvas/>. Each visitor's notes live in their own browser's `localStorage` — separate from any other browser, separate from the desktop app. Survives refresh; cleared if you wipe site data.
 
 ---
 
@@ -118,8 +118,8 @@ Hosted version: <https://faridjaff.github.io/sticky-notes/>. Each visitor's note
 ### Clone and install
 
 ```bash
-git clone git@github.com:faridjaff/sticky-notes.git
-cd sticky-notes
+git clone git@github.com:faridjaff/sticky-notes-canvas.git
+cd sticky-notes-canvas
 npm install
 ```
 
@@ -129,10 +129,10 @@ npm install
 
 ```bash
 npm run build:linux
-sudo dpkg -i "dist/sticky-notes_$(node -p 'require(\"./package.json\").version')_amd64.deb"
+sudo dpkg -i "dist/sticky-notes-canvas_$(node -p 'require(\"./package.json\").version')_amd64.deb"
 ```
 
-The app appears in your Activities menu as **Sticky Notes**. To uninstall later: `sudo apt remove sticky-notes`.
+The app appears in your Activities menu as **Sticky Notes**. To uninstall later: `sudo apt remove sticky-notes-canvas`.
 
 #### macOS
 
@@ -151,8 +151,8 @@ Launch from Spotlight (`Cmd+Space` → "Sticky Notes") or from Launchpad. To uni
 
 | | Path |
 |---|---|
-| Linux | `~/.config/sticky-notes/notes.json` |
-| macOS | `~/Library/Application Support/sticky-notes/notes.json` |
+| Linux | `~/.config/sticky-notes-canvas/notes.json` |
+| macOS | `~/Library/Application Support/sticky-notes-canvas/notes.json` |
 | Browser | `localStorage` key `stickies.all` |
 
 The JSON format is identical across all three — copy the file from one machine to another and your notes come with it.
