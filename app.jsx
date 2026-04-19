@@ -1500,15 +1500,22 @@ function Desktop({T, tweaks, currentFolder, folders, notes, allNotes, noteRefs, 
   });
 
   const onWheel = (e) => {
+    // Zoom is gated on Ctrl/Cmd+wheel only. Plain wheel passes through so
+    // long note bodies (with overflow scroll) and the folders drawer can
+    // scroll naturally instead of unexpectedly zooming the canvas. The
+    // global wheel guard at the top of AppInner already preventDefaults
+    // Ctrl/Cmd+wheel so the host browser's page-zoom doesn't fire.
+    if (!(e.ctrlKey || e.metaKey)) return;
     if (e.target.matches('textarea, input, [contenteditable="true"]')) return;
-    // Plain wheel = zoom toward cursor (Figma-style default). No modifier
-    // required — and we don't honor Ctrl/Cmd specially because the host
-    // browser hijacks Ctrl+wheel for page zoom in the web build.
     e.preventDefault();
     const rect = deskRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    const factor = Math.exp(-e.deltaY * 0.01);
+    // Halved rate compared to the previous default (was 0.01) — single
+    // mouse-wheel notches felt too aggressive, jumping multiple zoom levels.
+    // Trackpad pinch (Ctrl+wheel synthesised) still feels responsive; mouse
+    // wheels now step by a more controllable amount per notch.
+    const factor = Math.exp(-e.deltaY * 0.005);
     setView(v => {
       const nz = Math.max(0.25, Math.min(3, v.z * factor));
       const ratio = nz / v.z;
