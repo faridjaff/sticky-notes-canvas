@@ -2105,6 +2105,20 @@ function StickyNote({note, T, tweaks, folder, refCb, selected, selectedIds, setS
     // Group drag: if this note was already part of a multi-selection, move all selected notes together.
     const isGroupDrag = !(e.ctrlKey || e.metaKey) && selected && selectedIds && selectedIds.size > 1 && typeof setNotes === 'function';
     if (isGroupDrag) {
+      // Promote the entire selection to top z so no group member slides
+      // UNDER an unselected note during the drag. Preserve relative order
+      // within the group (the focused note stays topmost because onFocus
+      // already bumped it to the current max). Without this, only the
+      // focused note got bringToFront and the rest stayed at their
+      // creation-time z, which could be lower than nearby unselected notes.
+      setNotes(ns => {
+        const inGroup = ns.filter(x => selectedIds.has(x.id))
+          .sort((a, b) => (a.z||0) - (b.z||0));
+        const maxZ = ns.reduce((m, x) => Math.max(m, x.z||0), 0);
+        const newZ = new Map();
+        inGroup.forEach((x, i) => newZ.set(x.id, maxZ + 1 + i));
+        return ns.map(x => newZ.has(x.id) ? {...x, z: newZ.get(x.id)} : x);
+      });
       const starts = new Map();
       allNotes.forEach(n => { if (selectedIds.has(n.id)) starts.set(n.id, { x: n.x, y: n.y }); });
       const move = (ev) => {
