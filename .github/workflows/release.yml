@@ -18,6 +18,11 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual trigger for recovery when release-please creates a tag via
+  # GITHUB_TOKEN — those token-originated tag-push events don't cascade
+  # into this workflow, so we occasionally need to kick it off by hand:
+  #   gh workflow run release.yml --ref v1.4.0
+  workflow_dispatch:
 
 permissions:
   contents: write   # required so the release-upload action can write to the Releases API
