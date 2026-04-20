@@ -444,7 +444,7 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
       </div>
 
       <div data-backup-menu style={{position:'relative', display: narrow?'none':undefined}}>
-        <button onClick={()=>setBackupOpen(o=>!o)} title="Export or import notes" style={{
+        <button onClick={()=>setBackupOpen(o=>!o)} title="Save or restore a backup" style={{
           height:30, padding:'0 12px', borderRadius: isTerm?2:8,
           background:'#000', color:'#fff', border:`1px solid ${T.panelBorder}`,
           fontWeight:500, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6,
@@ -464,7 +464,7 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
               color:T.panelText, fontSize:13, cursor:'pointer', borderRadius: isTerm?2:6,
             }} onMouseEnter={e=>e.currentTarget.style.background=`${withA(T.panelText,.06)}`}
                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-              Export Notes…
+              Save backup…
             </button>
             <button onClick={()=>{setBackupOpen(false); onImport && onImport();}} style={{
               display:'block', width:'100%', textAlign:'left',
@@ -472,7 +472,7 @@ function TopChrome({T, tweaks, currentFolderName, query, setQuery, onNewNote, on
               color:T.panelText, fontSize:13, cursor:'pointer', borderRadius: isTerm?2:6,
             }} onMouseEnter={e=>e.currentTarget.style.background=`${withA(T.panelText,.06)}`}
                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-              Import Notes…
+              Restore backup…
             </button>
           </div>
         )}

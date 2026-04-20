@@ -127,13 +127,11 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Export Notes…',
-          accelerator: 'CmdOrCtrl+Shift+E',
+          label: 'Save backup…',
           click: () => mainWindow?.webContents.send('menu:export'),
         },
         {
-          label: 'Import Notes…',
-          accelerator: 'CmdOrCtrl+O',
+          label: 'Restore backup…',
           click: () => mainWindow?.webContents.send('menu:import'),
         },
         { type: 'separator' },
@@ -186,8 +184,8 @@ ipcMain.handle('notes:save', async (_e, data) => {
 
 ipcMain.handle('notes:export', async (_e, data) => {
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: 'Export Sticky Notes',
-    defaultPath: 'sticky-notes-export.json',
+    title: 'Save backup',
+    defaultPath: 'notes-backup.json',
     filters: [{ name: 'JSON', extensions: ['json'] }],
   });
   if (canceled || !filePath) return { ok: false, canceled: true };
@@ -201,7 +199,7 @@ ipcMain.handle('notes:export', async (_e, data) => {
 
 ipcMain.handle('notes:import', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-    title: 'Import Sticky Notes',
+    title: 'Restore backup',
     filters: [{ name: 'JSON', extensions: ['json'] }],
     properties: ['openFile'],
   });
